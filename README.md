@@ -50,6 +50,10 @@ This flexibility makes the library useful for a wide range of applications, from
 
 ```bash
 npm install generic-binary-search
+
+# or
+
+yarn add generic-binary-search
 ```
 
 ## Usage
