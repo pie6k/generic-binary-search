@@ -1,0 +1,50 @@
+{
+  "name": "generic-binary-search",
+  "version": "0.0.1",
+  "type": "module",
+  "author": {
+    "name": "Adam Pietrasiak",
+    "email": "adam@screen.studio"
+  },
+  "main": "./dist/index.umd.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.umd.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "coverage": "vitest run --coverage",
+    "lint": "eslint . --ext .ts",
+    "lint-and-fix": "eslint . --ext .ts --fix",
+    "pretty": "prettier --write \"src/**/*.ts\"",
+    "clean-up": "npm run lint-and-fix & npm run pretty"
+  },
+  "devDependencies": {
+    "@vitest/coverage-c8": "^0.33.0",
+    "eslint": "^8.49.0",
+    "prettier": "^3.0.3",
+    "semantic-release": "^21.1.1",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.9",
+    "vite-plugin-eslint": "^1.8.1",
+    "vitest": "^0.34.4"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.28.1",
+    "vite-plugin-dts": "^3.5.3"
+  },
+  "packageManager": "yarn@4.4.1"
+}
