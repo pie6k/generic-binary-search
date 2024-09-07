@@ -1,252 +1,222 @@
-# cleanups
+# Generic Binary Search Library
 
-Simple, yet powerful utility for managing cleanups.
+A versatile and efficient TypeScript library for performing various binary search operations on arrays of any type.
 
-This utility is widely used in [screen.studio](https://screen.studio) app and I believe it saved us a lot of time and effort.
-
-TLDR:
-
-```
-npm install cleanups
-yarn add cleanups
-```
+## Quick Examples
 
 ```typescript
-import { createCleanup } from 'cleanups';
+import { binaryFind, binaryFindClosest, binaryFindGte } from 'generic-binary-search';
 
-const cleanup = createCleanup();
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 3, name: 'Bob' },
+  { id: 5, name: 'Charlie' },
+  { id: 7, name: 'David' },
+];
 
-cleanup.next = () => {
-  console.log('cleanup 1');
-};
+// Find exact match
+const exactMatch = binaryFind(users, 3, (user) => user.id);
+console.log(exactMatch); // Output: { id: 3, name: 'Bob' }
 
-cleanup.next = () => {
-  console.log('cleanup 2');
-};
+// Find closest match
+const closestMatch = binaryFindClosest(users, 4, (user) => user.id);
+console.log(closestMatch); // Output: { id: 3, name: 'Bob' }
 
-cleanup.next = () => {
-  console.log('cleanup 3');
-};
-
-cleanup();
-
-// Output:
-// cleanup 1
-// cleanup 2
-// cleanup 3
+// Find first item greater than or equal to
+const gteMatch = binaryFindGte(users, 6, (user) => user.id);
+console.log(gteMatch); // Output: { id: 7, name: 'David' }
 ```
 
-React example:
+## Features
+
+- Generic implementation: Works with arrays of any type
+- Customizable value extraction: Provide a function to extract numeric values from your items
+- Multiple search operations:
+  - Exact match
+  - Closest match
+  - Greater than / Less than
+  - Greater than or equal / Less than or equal
+  - Find all occurrences
+  - Find items within a range
+  - Find item containing a value (for range-based data)
+
+## Rationale
+
+Binary search is a powerful algorithm for quickly finding elements in sorted arrays. However, most implementations are limited to simple arrays of numbers. This library provides a generic approach, allowing you to use binary search on arrays of any type by specifying a function to extract numeric values from your items.
+
+This flexibility makes the library useful for a wide range of applications, from simple number arrays to complex objects with multiple fields.
+
+## Installation
+
+```bash
+npm install generic-binary-search
+```
+
+## Usage
+
+Here are examples of how to use each function in the library with simple objects, ordered by most common usage:
+
+### 1. Basic Binary Search (Exact Match)
 
 ```typescript
-import { useEffect } from 'react';
-import { createCleanup } from 'cleanups';
+import { binaryFind, binaryFindIndex } from 'generic-binary-search';
 
-/**
- * Will register multiple event listeners with the same handler
- */
-function useElementEvents(ref: RefObject<HTMLElement>, types: string[], handler: (event: Event) => void) {
-  useEffect(() => {
-    const element = ref.current;
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 3, name: 'Bob' },
+  { id: 5, name: 'Charlie' },
+  { id: 7, name: 'David' },
+];
 
-    if (!element) return;
+// Find the item with id 3
+const user = binaryFind(users, 3, (user) => user.id);
+console.log(user); // Output: { id: 3, name: 'Bob' }
 
-    const cleanup = createCleanup();
-
-    for (const type of types) {
-      cleanup.next = addEventListener(element, type, handler);
-    }
-
-    return cleanup;
-  }, [ref, types, handler]);
-}
-
-// Unify addEventListener and removeEventListener in one function - you can do the same with setTimeout, requestAnimationFrame, etc.
-function addEventListener(element: HTMLElement, type: string, handler: (event: Event) => void) {
-  element.addEventListener(type, handler);
-
-  return () => element.removeEventListener(type, handler);
-}
+// Find the index of the item with id 5
+const index = binaryFindIndex(users, 5, (user) => user.id);
+console.log(index); // Output: 2
 ```
 
-Note: I considered using `cleanup.add(cb)` instead of `cleanup.next = cb`, but decided to go with the latter as it results in less nesting (especially when using code formatters).
-
-# Rationale
-
-I think there are two main problems with managing cleanups in JavaScript:
-
-1. JavaScript APIs are inconsistent in how they require you to clean up things (not managed by this lib)
-2. It is hard to compose cleanups (managed by this lib)
-
-Let's consider adding some event listeners and cleaning them up later.
+### 2. Closest Match
 
 ```typescript
-// We need to store those functions to be able to remove them later
-function someEventHandlerA() {}
-function someEventHandlerB() {}
+import { binaryFindClosest, binaryFindClosestIndex } from 'generic-binary-search';
 
-element.addEventListener('click', someEventHandlerA);
-element.addEventListener('click', someEventHandlerB);
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 3, name: 'Bob' },
+  { id: 5, name: 'Charlie' },
+  { id: 7, name: 'David' },
+];
 
-// Later on
-return function cleanup() {
-  element.removeEventListener('click', someEventHandlerA);
-  element.removeEventListener('click', someEventHandlerB);
-};
+// Find the user with id closest to 4
+const closestUser = binaryFindClosest(users, 4, (user) => user.id);
+console.log(closestUser); // Output: { id: 3, name: 'Bob' }
+
+// Find the index of the user with id closest to 6
+const closestIndex = binaryFindClosestIndex(users, 6, (user) => user.id);
+console.log(closestIndex); // Output: 2 (index of Charlie)
 ```
 
-We need to call a different function to add and remove event listeners. We also need to store those functions in the outer scope.
-
-The same goes with many other APIs:
-
-- setTimeout returns ID that you need to pass to clearTimeout
-- ResizeObserver.observe returns nothing and you need to call disconnect later
-- The same with requestAnimationFrame, IntersectionObserver, etc.
-
-Now, let's create an improved version of `addEventListener` that simply returns a cleanup function and owns the responsibility of executing some cleanup logic.
+### 3. Greater Than or Equal / Less Than or Equal
 
 ```typescript
-function addEventListener<K extends keyof HTMLElementEventMap>(
-  element: HTMLElement,
-  type: K,
-  handler: (event: HTMLElementEventMap[K]) => void,
-  options?: boolean | AddEventListenerOptions,
-) {
-  element.addEventListener(type, handler, options);
+import { binaryFindGte, binaryFindLte, binaryFindGteIndex, binaryFindLteIndex } from 'generic-binary-search';
 
-  return () => element.removeEventListener(type, handler, options);
-}
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 3, name: 'Bob' },
+  { id: 5, name: 'Charlie' },
+  { id: 7, name: 'David' },
+];
+
+// Find the first user with id greater than or equal to 4
+const gteUser = binaryFindGte(users, 4, (user) => user.id);
+console.log(gteUser); // Output: { id: 5, name: 'Charlie' }
+
+// Find the last user with id less than or equal to 6
+const lteUser = binaryFindLte(users, 6, (user) => user.id);
+console.log(lteUser); // Output: { id: 5, name: 'Charlie' }
+
+// Find the index of the first user with id greater than or equal to 5
+const gteIndex = binaryFindGteIndex(users, 5, (user) => user.id);
+console.log(gteIndex); // Output: 2
+
+// Find the index of the last user with id less than or equal to 4
+const lteIndex = binaryFindLteIndex(users, 4, (user) => user.id);
+console.log(lteIndex); // Output: 1 (index of Bob)
 ```
 
-Note: We can easily create similar wrappers like `createTimeout`, `createAnimationFrame`, etc.
+### 4. Greater Than / Less Than
 
 ```typescript
-function createTimeout(cb: () => void, delay: number) {
-  const id = setTimeout(cb, delay);
+import { binaryFindGtIndex, binaryFindLtIndex } from 'generic-binary-search';
 
-  return () => clearTimeout(id);
-}
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 3, name: 'Bob' },
+  { id: 5, name: 'Charlie' },
+  { id: 7, name: 'David' },
+];
+
+// Find the index of the first user with id greater than 4
+const gtIndex = binaryFindGtIndex(users, 4, (user) => user.id);
+console.log(gtIndex); // Output: 2 (index of Charlie)
+
+// Find the index of the last user with id less than 6
+const ltIndex = binaryFindLtIndex(users, 6, (user) => user.id);
+console.log(ltIndex); // Output: 2 (index of Charlie)
 ```
 
-Back on track - the same code looks like this:
+### 5. Find Items Within a Range
 
 ```typescript
-// We only need to know how to add event listeners, we don't need to remember how to remove them
-const cleanup1 = addEventListener(element, 'click', function someEventHandlerA() {});
-const cleanup2 = addEventListener(element, 'click', function someEventHandlerB() {});
+import { binaryFindBetween, binaryFindIndicesBetween } from 'generic-binary-search';
 
-// Later on
-return function cleanup() {
-  cleanup1();
-  cleanup2();
-};
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 3, name: 'Bob' },
+  { id: 5, name: 'Charlie' },
+  { id: 7, name: 'David' },
+];
+
+// Find users with ids between 2 and 6
+const rangeUsers = binaryFindBetween(users, 2, 6, (user) => user.id);
+console.log(rangeUsers); // Output: [{ id: 3, name: 'Bob' }, { id: 5, name: 'Charlie' }]
+
+// Find indices of users with ids between 2 and 6
+const rangeIndices = binaryFindIndicesBetween(users, 2, 6, (user) => user.id);
+console.log(rangeIndices); // Output: [1, 2]
 ```
 
-Ok, now let's say we have some logic that is conditional and we have an array of elements we want to add event listeners to.
+### 6. Find All Occurrences
 
 ```typescript
-const elements = [element1, element2, element3];
+import { binaryFindAll, binaryFindAllIndices } from 'generic-binary-search';
 
-const cleanups: Array<() => void> = [];
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 3, name: 'Bob' },
+  { id: 5, name: 'Charlie' },
+  { id: 5, name: 'Chris' },
+  { id: 7, name: 'David' },
+];
 
-for (const element of elements) {
-  if (someCondition) {
-    cleanups.push(addEventListener(element, 'click', function someEventHandler() {}));
-  }
-}
+// Find all users with id 5
+const allUsers = binaryFindAll(users, 5, (user) => user.id);
+console.log(allUsers); // Output: [{ id: 5, name: 'Charlie' }, { id: 5, name: 'Chris' }]
 
-// Later on
-return () => {
-  for (const cleanup of cleanups) {
-    try {
-      cleanup();
-    } catch (e) {
-      // We have to catch as otherwise one error would prevent cleaning up the rest
-      console.error('Error while cleaning up', e);
-    }
-  }
-};
+// Find all indices of users with id 5
+const allIndices = binaryFindAllIndices(users, 5, (user) => user.id);
+console.log(allIndices); // Output: [2, 3]
 ```
 
-It's already way better than if using .addEventListener and .removeEventListener directly, but it's still a bit messy.
-
-Now let's use 'cleanups' utility:
+### 7. Find Item Containing a Value (Range-based data)
 
 ```typescript
-import { createCleanup } from 'cleanups';
+import { binaryFindRangeItem } from 'generic-binary-search';
 
-const cleanup = createCleanup();
+const ranges = [
+  { start: 0, end: 10, name: 'Range A' },
+  { start: 11, end: 20, name: 'Range B' },
+  { start: 21, end: 30, name: 'Range C' },
+  { start: 31, end: 40, name: 'Range D' },
+];
 
-const elements = [element1, element2, element3];
-
-for (const element of elements) {
-  if (someCondition) {
-    cleanup.next = addEventListener(element, 'click', function someEventHandler() {});
-  }
-}
-
-// Later on
-cleanup();
+// Find the range containing 15
+const range = binaryFindRangeItem(
+  ranges,
+  15,
+  (item) => item.start,
+  (item) => item.end,
+);
+console.log(range); // Output: { start: 11, end: 20, name: 'Range B' }
 ```
 
-Now, this is also composable:
+## Contributing
 
-Say we have a parent and a child class. We want to clean up both parent and all the children when the parent is destroyed.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-```typescript
-class ParentThing {
-  // Parent has its own cleanup. Children will add their cleanups to this cleanup
-  destroy = createCleanup();
+## License
 
-  constructor() {
-    // Parent own cleanups
-    this.destroy.next = () => {
-      console.log('destroying parent');
-    };
-
-    this.destroy.next = addEventListener(this.foo, 'click', function someEventHandler() {});
-  }
-
-  children: ChildThing[] = [];
-
-  addChild() {
-    this.children.push(new ChildThing(this));
-  }
-}
-
-class ChildThing {
-  // Child has its own cleanup
-  destroy = createCleanup();
-
-  constructor(parent: ParentThing) {
-    // Child has its own cleanups
-    this.destroy.next = () => {
-      console.log('destroying child');
-    };
-
-    // If parent is destroyed, child will be destroyed as well
-    this.parent.destroy.next = this.destroy;
-  }
-}
-```
-
-# API
-
-## createCleanup
-
-```typescript
-function createCleanup(options?: CleanupOptions): CleanupObject;
-
-interface CleanupOptions {
-  // If true, the cleanup will be executed only once and will warn if more cleanups are added after it was executed
-  once?: boolean;
-  // This arg will be passed as `this` to each cleanup function
-  thisArg?: unknown;
-}
-
-const cleanup = createCleanup();
-
-cleanup.next = someFunction; // Add a cleanup to the cleanup chain
-cleanup.wasCalled; // Returns true if the cleanup was already called at least once
-cleanup(); // Execute all cleanups and reset the cleanup
-```
+This project is licensed under the MIT License.
